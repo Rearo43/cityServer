@@ -8,7 +8,7 @@ const PORT = process.env.PORT;
 const app = express();
 
 
-app.use(cors());
+app.use(cors() );
 
 app.get('/', (req, resp) =>{
   resp.status(200).send('Working?');
