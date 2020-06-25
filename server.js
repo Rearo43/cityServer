@@ -18,43 +18,44 @@ app.get('/weather', weather);
 app.get('/hiking', hiking);
 
 function home(req, resp){
-	resp.status(200).send('Working?');
+    resp.status(200).send('Working?');
 }
 
 function location(req, resp){
-	useAPI(req.query.city, resp);
+    useAPI(req.query.city, resp);
 }
 
 function useAPI(city, resp){
-	const API = 'https://us1.locationiq.com/v1/search.php';
+    const API = 'https://us1.locationiq.com/v1/search.php';
 
-	let qObject = {
-		key: process.env.GEOCODE_API_KEY,
-		q: city,
-		format: 'json'
-	};
+    let qObject = {
+        key: process.env.GEOCODE_API_KEY,
+        q: city,
+        format: 'json'
+    };
 
-	superagent
-		.get(API)
+    superagent.get(API).query(qObject).then(location =>{
+        let newLocation = new Location(location.body[0], city);
 
-		.query(qObject).then((location) =>{
-			let newLocation = new Location(location.body[0], city);
-			resp.status(200).send(newLocation);
-		});
+        resp.status(200).send(newLocation);
+
+    }).catch(() =>{
+        resp.status(500).send('Location Broken!');
+    });
 
 }
 
 function Location(each, city){
-	this.latitude = each.lat;
-	this.longitude = each.lon;
-	this.formatted_query = each.display_name;
-	this.search_query = city;
+    this.latitude = each.lat;
+    this.longitude = each.lon;
+    this.formatted_query = each.display_name;
+    this.search_query = city;
 }
 function weather(req, resp){
-    
+
 }
 function hiking(req, resp){
-    
+
 }
 
 // app.get('/weather', (req, resp)=>{
@@ -80,11 +81,11 @@ function hiking(req, resp){
 // }
 
 app.use('*', (req, resp)=>{
-	resp.status(404).send('Can not find!');
+    resp.status(404).send('Can not find!');
 });
 
 app.use((error,req, resp, next)=>{
-	resp.status(500).send('Broken!');
+    resp.status(500).send('Broken!');
 });
 
 app.listen(PORT, () => console.log('Working on', PORT));
