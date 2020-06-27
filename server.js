@@ -22,10 +22,10 @@ function home(req, resp){
 }
 
 function location(req, resp){
-  useAPI(req.query.city, resp);
+  locationAPI(req.query.city, resp);
 }
 
-function useAPI(city, resp){
+function locationAPI(city, resp){
   const API = 'https://us1.locationiq.com/v1/search.php';
 
   let qObject = {
@@ -51,16 +51,40 @@ function Location(info, city){
   this.search_query = city;
 }
 
+// function weather(req, resp){
+//   weatherAPI(resp);
+  //   let dataWeather = require('./data/weather.json');
+  //   let weatherArr =
+  //     dataWeather.data.map(dayData => {
+  //       let weather = new Weather(dayData);
+
+  //       return weather;
+  //     });
+
+//   resp.status(200).json(weatherArr);
+// }
+
 function weather(req, resp){
-  let dataWeather = require('./data/weather.json');
-  let weatherArr =
-    dataWeather.data.map(dayData => {
-      let weather = new Weather(dayData);
+  const API = 'https://api.weatherbit.io/v2.0/forecast/daily';
 
-      return weather;
-    });
+  let qObject = {
+    key: process.env.WEATHER,
+    lat: req.query.latitude,
+    lon: req.query.longitude,
+    days: 8
+  };
 
-  resp.status(200).json(weatherArr);
+  superagent.get(API).query(qObject)
+    .then(getEachDay =>{
+      let weatherArr =
+            getEachDay.body.data.map(dayData => {
+              return new Weather(dayData);
+            });
+
+      resp.status(200).json(weatherArr);
+
+    }).catch(() =>resp.status(500).send('Weather Broken!'));
+
 }
 
 function Weather(info){
