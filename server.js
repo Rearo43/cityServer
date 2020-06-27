@@ -22,26 +22,26 @@ function home(req, resp){
 }
 
 function location(req, resp){
-    useAPI(req.query.city, resp);
+  useAPI(req.query.city, resp);
 }
 
 function useAPI(city, resp){
-    const API = 'https://us1.locationiq.com/v1/search.php';
+  const API = 'https://us1.locationiq.com/v1/search.php';
 
-    let qObject = {
-        key: process.env.GEOCODE,
-        q: city,
-        format: 'json'
-    };
+  let qObject = {
+    key: process.env.GEOCODE,
+    q: city,
+    format: 'json'
+  };
 
-    superagent.get(API).query(qObject).then(location =>{
-        let newLocation = new Location(location.body[0], city);
+  superagent.get(API).query(qObject).then(location =>{
+    let newLocation = new Location(location.body[0], city);
+    console.log(newLocation);
+    resp.status(200).send(newLocation);
 
-        resp.status(200).send(newLocation);
-
-    }).catch(() =>{
-        resp.status(500).send('Location Broken!');
-    });
+  }).catch(() =>{
+    resp.status(500).send('Location Broken!');
+  });
 
 }
 
@@ -57,11 +57,11 @@ function weather(req, resp){
   let allWeather = [];
 
   dataWeather.data.forEach(dayData => {
-      console.log(dayData.weather.description);
-        let weather = new Weather(dayData);
-        allWeather.push(weather);
-    });
-    console.log(allWeather);
+    // console.log(dayData.weather.description);
+    let weather = new Weather(dayData);
+    allWeather.push(weather);
+  });
+//   console.log(allWeather);
   resp.status(200).json(allWeather);
 }
 
