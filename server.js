@@ -22,10 +22,10 @@ function home(req, resp){
 }
 
 function location(req, resp){
-  useAPI(req.query.city, resp);
+  locationAPI(req.query.city, resp);
 }
 
-function useAPI(city, resp){
+function locationAPI(city, resp){
   const API = 'https://us1.locationiq.com/v1/search.php';
 
   let qObject = {
@@ -52,15 +52,41 @@ function Location(info, city){
 }
 
 function weather(req, resp){
-  let dataWeather = require('./data/weather.json');
-  let weatherArr =
-    dataWeather.data.map(dayData => {
-      let weather = new Weather(dayData);
+  weatherAPI(req.forecast, resp);
+  //   let dataWeather = require('./data/weather.json');
+  //   let weatherArr =
+  //     dataWeather.data.map(dayData => {
+  //       let weather = new Weather(dayData);
 
-      return weather;
-    });
+  //       return weather;
+  //     });
 
-  resp.status(200).json(weatherArr);
+//   resp.status(200).json(weatherArr);
+}
+
+function weatherAPI(req, resp){
+  const API = 'https://api.weatherbit.io/v2.0/forecast/daily?';
+
+  let qObject = {
+    key: process.env.WEATHER,
+    lat: req.query.latitude,
+    lon: req.query.longitude,
+    days: 8
+  };
+
+  superagent.get(API).query(qObject)
+    .then(day =>{
+      let weatherArr =
+            day.data.map(dayData => {
+              let weather = new Weather(dayData);
+
+              return weather;
+            });
+
+      resp.status(200).json(weatherArr);
+
+    }).catch(() =>resp.status(500).send('Location Broken!'));
+
 }
 
 function Weather(info){
