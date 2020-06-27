@@ -51,8 +51,8 @@ function Location(info, city){
   this.search_query = city;
 }
 
-function weather(req, resp){
-  weatherAPI(req.forecast, resp);
+// function weather(req, resp){
+//   weatherAPI(resp);
   //   let dataWeather = require('./data/weather.json');
   //   let weatherArr =
   //     dataWeather.data.map(dayData => {
@@ -62,10 +62,10 @@ function weather(req, resp){
   //     });
 
 //   resp.status(200).json(weatherArr);
-}
+// }
 
-function weatherAPI(req, resp){
-  const API = 'https://api.weatherbit.io/v2.0/forecast/daily?';
+function weather(req, resp){
+  const API = 'https://api.weatherbit.io/v2.0/forecast/daily';
 
   let qObject = {
     key: process.env.WEATHER,
@@ -75,17 +75,15 @@ function weatherAPI(req, resp){
   };
 
   superagent.get(API).query(qObject)
-    .then(day =>{
+    .then(getEachDay =>{
       let weatherArr =
-            day.data.map(dayData => {
-              let weather = new Weather(dayData);
-
-              return weather;
+            getEachDay.body.data.map(dayData => {
+              return new Weather(dayData);
             });
 
       resp.status(200).json(weatherArr);
 
-    }).catch(() =>resp.status(500).send('Location Broken!'));
+    }).catch(() =>resp.status(500).send('Weather Broken!'));
 
 }
 
