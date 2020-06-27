@@ -34,14 +34,13 @@ function useAPI(city, resp){
     format: 'json'
   };
 
-  superagent.get(API).query(qObject).then(location =>{
-    let newLocation = new Location(location.body[0], city);
-    console.log(newLocation);
-    resp.status(200).send(newLocation);
+  superagent.get(API).query(qObject)
+    .then(location =>{
+      let newLocation = new Location(location.body[0], city);
 
-  }).catch(() =>{
-    resp.status(500).send('Location Broken!');
-  });
+      resp.status(200).send(newLocation);
+
+    }).catch(() =>resp.status(500).send('Location Broken!'));
 
 }
 
@@ -54,21 +53,20 @@ function Location(info, city){
 
 function weather(req, resp){
   let dataWeather = require('./data/weather.json');
-  let allWeather = [];
+  let weatherArr =
+    dataWeather.data.map(dayData => {
+      let weather = new Weather(dayData);
 
-  dataWeather.data.forEach(dayData => {
-    // console.log(dayData.weather.description);
-    let weather = new Weather(dayData);
-    allWeather.push(weather);
-  });
-//   console.log(allWeather);
-  resp.status(200).json(allWeather);
+      return weather;
+    });
+
+  resp.status(200).json(weatherArr);
 }
 
 function Weather(info){
   let getDate = new Date(info.datetime);
 
-  this.forcast = info.weather.description;
+  this.forecast = info.weather.description;
   this.time = getDate.toDateString();
 }
 
