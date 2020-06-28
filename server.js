@@ -15,7 +15,7 @@ app.use(cors());
 app.get('/', home);
 app.get('/location', location);
 app.get('/weather', weather);
-// app.get('/hiking', hiking);
+app.get('/trails', hiking);
 
 function home(req, resp){
   resp.status(200).send('Working?');
@@ -51,19 +51,6 @@ function Location(info, city){
   this.search_query = city;
 }
 
-// function weather(req, resp){
-//   weatherAPI(resp);
-  //   let dataWeather = require('./data/weather.json');
-  //   let weatherArr =
-  //     dataWeather.data.map(dayData => {
-  //       let weather = new Weather(dayData);
-
-  //       return weather;
-  //     });
-
-//   resp.status(200).json(weatherArr);
-// }
-
 function weather(req, resp){
   const API = 'https://api.weatherbit.io/v2.0/forecast/daily';
 
@@ -94,9 +81,47 @@ function Weather(info){
   this.time = getDate.toDateString();
 }
 
+function hiking(req, resp){
+  const API = 'https://www.hikingproject.com/data/get-trails';
+
+  let qObject = {
+    key: process.env.HIKING,
+    lat: req.query.latitude,
+    lon: req.query.longitude,
+  };
+
+  superagent.get(API).query(qObject)
+    .then(getTrails =>{
+      let hikingArr =
+              getTrails.body.trails.map(trails => {
+                return new Hiking(trails);
+              });
+
+      resp.status(200).json(hikingArr);
+
+    }).catch(() =>resp.status(500).send('Hiking Broken!'));
+
+}
+
 app.use('*', (req,resp) => {
   resp.status(404).send('Could Not Find!');
 });
+
+function Hiking(info){
+  this.name = info.name;
+  this.location = info.location;
+  this.length = info.length;
+  this.stars = info.stars;
+  this.star_votes = info.starVotes;
+  this.summery = info.summery;
+  this.conditions = info.conditionDetails;
+  this.condition_date = info.conditionDate;
+  this.condition_time = info.conditionDate;
+  this.trail_url = info.url;
+
+
+
+}
 
 app.use((error, req, resp, next) => {
   // console.log(error);
