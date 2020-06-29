@@ -16,6 +16,7 @@ app.get('/', home);
 app.get('/location', location);
 app.get('/weather', weather);
 app.get('/trails', hiking);
+app.get('/movies', movies);
 
 function home(req, resp){
   resp.status(200).send('Working?');
@@ -94,6 +95,7 @@ function hiking(req, resp){
     .then(getTrails =>{
       let hikingArr =
               getTrails.body.trails.map(trails => {
+
                 return new Hiking(trails);
               });
 
@@ -102,10 +104,6 @@ function hiking(req, resp){
     }).catch(() =>resp.status(500).send('Hiking Broken!'));
 
 }
-
-app.use('*', (req,resp) => {
-  resp.status(404).send('Could Not Find!');
-});
 
 function Hiking(info){
   this.name = info.name;
@@ -118,10 +116,44 @@ function Hiking(info){
   this.condition_date = info.conditionDate;
   this.condition_time = info.conditionDate;
   this.trail_url = info.url;
+}
 
+function movies(req, resp){
+    console.log(req.query.formatted_query);
+  const API = 'https://api.themoviedb.org/3/search/movie';
 
+  let qObject = {
+    api_key: process.env.MOVIES,
+    query: req.query.search_query,
+  };
+
+  superagent.get(API).query(qObject)
+    .then(getMovies =>{
+      let moviesArr =
+                getMovies.body.results.map(movie => {
+
+                  return new Movies(movie);
+                });
+
+      resp.status(200).json(moviesArr);
+
+    }).catch(() =>resp.status(500).send('Movies Broken!'));
 
 }
+
+function Movies(info){
+  this.title = info.original_title;
+  this.overview = info.overview;
+  this.average_votes = info.vote_average;
+  this.total_votes = info.vote_count;
+  this.image_url = `https://image.tmdb.org/t/p/w500${info.poster_path}`;
+  this.popularity = info.popularity;
+  this.released_on = info.release_date;
+}
+
+app.use('*', (req,resp) => {
+  resp.status(404).send('Could Not Find!');
+});
 
 app.use((error, req, resp, next) => {
   // console.log(error);
