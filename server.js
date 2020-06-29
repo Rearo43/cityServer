@@ -7,6 +7,7 @@ const cors = require('cors');
 const superagent = require('superagent');
 const PORT = process.env.PORT;
 const app = express();
+const pg = require('pg');
 
 
 app.use(cors());
@@ -16,6 +17,8 @@ app.get('/', home);
 app.get('/location', location);
 app.get('/weather', weather);
 app.get('/trails', hiking);
+app.get('/movies', movies);
+app.get('/yelp', yelp);
 
 function home(req, resp){
   resp.status(200).send('Working?');
@@ -25,18 +28,18 @@ function location(req, resp){
   locationAPI(req.query.city, resp);
 }
 
-function locationAPI(city, resp){
+function locationAPI(req, resp){
   const API = 'https://us1.locationiq.com/v1/search.php';
 
   let qObject = {
     key: process.env.GEOCODE,
-    q: city,
+    q: req,
     format: 'json'
   };
 
   superagent.get(API).query(qObject)
-    .then(location =>{
-      let newLocation = new Location(location.body[0], city);
+    .then(getLocation =>{
+      let newLocation = new Location(getLocation.body[0], req);
 
       resp.status(200).send(newLocation);
 
@@ -62,9 +65,9 @@ function weather(req, resp){
   };
 
   superagent.get(API).query(qObject)
-    .then(getEachDay =>{
+    .then(getWeather =>{
       let weatherArr =
-            getEachDay.body.data.map(dayData => {
+            getWeather.body.data.map(dayData => {
               return new Weather(dayData);
             });
 
@@ -94,6 +97,7 @@ function hiking(req, resp){
     .then(getTrails =>{
       let hikingArr =
               getTrails.body.trails.map(trails => {
+
                 return new Hiking(trails);
               });
 
@@ -102,10 +106,6 @@ function hiking(req, resp){
     }).catch(() =>resp.status(500).send('Hiking Broken!'));
 
 }
-
-app.use('*', (req,resp) => {
-  resp.status(404).send('Could Not Find!');
-});
 
 function Hiking(info){
   this.name = info.name;
@@ -118,10 +118,75 @@ function Hiking(info){
   this.condition_date = info.conditionDate;
   this.condition_time = info.conditionDate;
   this.trail_url = info.url;
+}
 
+function movies(req, resp){
+  const API = 'https://api.themoviedb.org/3/search/movie';
 
+  let qObject = {
+    api_key: process.env.MOVIES,
+    query: req.query.search_query,
+  };
+
+  superagent.get(API).query(qObject)
+    .then(getMovies =>{
+      let moviesArr =
+                getMovies.body.results.map(movie => {
+
+                  return new Movies(movie);
+                });
+
+      resp.status(200).json(moviesArr);
+
+    }).catch(() =>resp.status(500).send('Movies Broken!'));
 
 }
+
+function Movies(info){
+  this.title = info.original_title;
+  this.overview = info.overview;
+  this.average_votes = info.vote_average;
+  this.total_votes = info.vote_count;
+  this.image_url = `https://image.tmdb.org/t/p/w500${info.poster_path}`;
+  this.popularity = info.popularity;
+  this.released_on = info.release_date;
+}
+
+function yelp(req, resp){
+  const API = `https://api.yelp.com/v3/businesses/search`;
+
+  let qObject = {
+    term: 'restaurants',
+    location: req.query.search_query,
+    limit: 10
+  };
+
+  let key = {'Authorization': `Bearer ${process.env.YELP}`};
+
+  superagent.get(API).set(key).query(qObject)
+    .then(getYelp =>{
+      let yelpArr =
+              getYelp.body.businesses.map(yelpData => {
+                return new Yelp(yelpData);
+              });
+
+      resp.status(200).json(yelpArr);
+
+    }).catch(() =>resp.status(500).send('Yelp Broken!'));
+
+}
+
+function Yelp(info){
+  this.name = info.name;
+  this.image_url = info.image_url;
+  this.price = info.price;
+  this.rating = info.rating;
+  this.url = info.url;
+}
+
+app.use('*', (req,resp) => {
+  resp.status(404).send('Could Not Find!');
+});
 
 app.use((error, req, resp, next) => {
   // console.log(error);
