@@ -7,6 +7,7 @@ const cors = require('cors');
 const superagent = require('superagent');
 const PORT = process.env.PORT;
 const app = express();
+const pg = require('pg');
 
 
 app.use(cors());
@@ -17,6 +18,7 @@ app.get('/location', location);
 app.get('/weather', weather);
 app.get('/trails', hiking);
 app.get('/movies', movies);
+app.get('/yelp', yelp);
 
 function home(req, resp){
   resp.status(200).send('Working?');
@@ -119,7 +121,6 @@ function Hiking(info){
 }
 
 function movies(req, resp){
-    console.log(req.query.formatted_query);
   const API = 'https://api.themoviedb.org/3/search/movie';
 
   let qObject = {
@@ -149,6 +150,38 @@ function Movies(info){
   this.image_url = `https://image.tmdb.org/t/p/w500${info.poster_path}`;
   this.popularity = info.popularity;
   this.released_on = info.release_date;
+}
+
+function yelp(req, resp){
+  const API = `https://api.yelp.com/v3/businesses/search`;
+
+  let qObject = {
+    term: 'restaurants',
+    location: req.query.search_query,
+    limit: 10
+  };
+//   let key = ('Authorization', `Bearer ${process.env.YELP}`);
+
+
+  superagent.get(API).set('Authorization', `Bearer ${process.env.YELP}`).query(qObject)
+    .then(getYelp =>{
+      let yelpArr =
+              getYelp.body.businesses.map(yelpData => {
+                return new Yelp(yelpData);
+              });
+
+      resp.status(200).json(yelpArr);
+
+    }).catch(() =>resp.status(500).send('Yelp Broken!'));
+
+}
+
+function Yelp(info){
+  this.name = info.name;
+  this.image_url = info.image_url;
+  this.price = info.price;
+  this.rating = info.rating;
+  this.url = info.url;
 }
 
 app.use('*', (req,resp) => {
