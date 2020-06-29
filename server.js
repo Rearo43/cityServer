@@ -121,6 +121,7 @@ function Hiking(info){
 }
 
 function movies(req, resp){
+    // console.log(req.query);
   const API = 'https://api.themoviedb.org/3/search/movie';
 
   let qObject = {
@@ -150,6 +151,7 @@ function Movies(info){
   this.image_url = `https://image.tmdb.org/t/p/w500${info.poster_path}`;
   this.popularity = info.popularity;
   this.released_on = info.release_date;
+  console.log(info.poster_path);
 }
 
 function yelp(req, resp){
