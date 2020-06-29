@@ -28,18 +28,18 @@ function location(req, resp){
   locationAPI(req.query.city, resp);
 }
 
-function locationAPI(city, resp){
+function locationAPI(req, resp){
   const API = 'https://us1.locationiq.com/v1/search.php';
 
   let qObject = {
     key: process.env.GEOCODE,
-    q: city,
+    q: req,
     format: 'json'
   };
 
   superagent.get(API).query(qObject)
-    .then(location =>{
-      let newLocation = new Location(location.body[0], city);
+    .then(getLocation =>{
+      let newLocation = new Location(getLocation.body[0], req);
 
       resp.status(200).send(newLocation);
 
@@ -65,9 +65,9 @@ function weather(req, resp){
   };
 
   superagent.get(API).query(qObject)
-    .then(getEachDay =>{
+    .then(getWeather =>{
       let weatherArr =
-            getEachDay.body.data.map(dayData => {
+            getWeather.body.data.map(dayData => {
               return new Weather(dayData);
             });
 
@@ -160,10 +160,10 @@ function yelp(req, resp){
     location: req.query.search_query,
     limit: 10
   };
-//   let key = ('Authorization', `Bearer ${process.env.YELP}`);
 
+  let key = {'Authorization': `Bearer ${process.env.YELP}`};
 
-  superagent.get(API).set('Authorization', `Bearer ${process.env.YELP}`).query(qObject)
+  superagent.get(API).set(key).query(qObject)
     .then(getYelp =>{
       let yelpArr =
               getYelp.body.businesses.map(yelpData => {
