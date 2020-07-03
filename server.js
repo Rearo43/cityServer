@@ -8,7 +8,6 @@ const superagent = require('superagent');
 const PORT = process.env.PORT || 3000;
 const app = express();
 const pg = require('pg');
-const { response, request } = require('express');
 const database = new pg.Client(process.env.DATABASE);
 
 
@@ -25,8 +24,8 @@ app.get('/yelp', yelp);
 database.connect().then(() =>{
   app.listen(PORT, () => console.log('Database working!'));
 
-}).catch(() => {
-  throw 'Database not working!';
+}).catch(err => {
+  throw console.log('Database not working!', err.message);
 });
 
 function home(req, resp){
@@ -39,13 +38,15 @@ function location(req, resp){
 
   database.query(SQL, cityQuery).then(data =>{
 
-    if (data.rowcount){
-      resp.status(200).send(request.rows[0]);
+    if (data.rows[0]){
+      let inSQL = new Location(data.rows[0], req.query.city);
+      resp.status(200).send(inSQL);
     } else{
       locationAPI(req.query.city, resp);
     }
 
-  });
+    console.log('is location working');
+  }).catch(() => resp.status(500).send('Location Broken!'));
 
 }
 
@@ -61,12 +62,12 @@ function locationAPI(req, resp){
   superagent.get(API).query(qObject).then(getLocation =>{
     let newLocation = new Location(getLocation.body[0], req);
 
-    cacheToDB(getLocation);
+    cacheToDB(newLocation);
 
     resp.status(200).send(newLocation);
 
-  }).catch(() =>resp.status(500).send('Location Broken!'));
-
+  }).catch(() =>resp.status(500).send('Location API Broken!'));
+  console.log('is API working');
 }
 
 function Location(info, city){
@@ -223,5 +224,5 @@ app.use((error, req, resp, next) => {
   resp.status(500).send('Broken Server!');
 });
 
-app.listen( PORT, () => console.log('Working?', PORT));
+// app.listen( PORT, () => console.log('Working?', PORT));
 
