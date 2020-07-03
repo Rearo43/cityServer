@@ -5,9 +5,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const superagent = require('superagent');
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 const app = express();
 const pg = require('pg');
+const database = new pg.Client(process.env.DATABASE);
 
 
 app.use(cors());
@@ -20,12 +21,33 @@ app.get('/trails', hiking);
 app.get('/movies', movies);
 app.get('/yelp', yelp);
 
+database.connect().then(() =>{
+  app.listen(PORT, () => console.log('Database working!'));
+
+}).catch(err => {
+  throw console.log('Database not working!', err.message);
+});
+
 function home(req, resp){
   resp.status(200).send('Working?');
 }
 
 function location(req, resp){
-  locationAPI(req.query.city, resp);
+  const cityQuery = [req.query.city];
+  const SQL = 'SELECT * FROM places WHERE search_query = $1;';
+
+  database.query(SQL, cityQuery).then(data =>{
+
+    if (data.rows[0]){
+      let inSQL = new Location(data.rows[0], req.query.city);
+      resp.status(200).send(inSQL);
+    } else{
+      locationAPI(req.query.city, resp);
+    }
+
+    console.log('is location working');
+  }).catch(() => resp.status(500).send('Location Broken!'));
+
 }
 
 function locationAPI(req, resp){
@@ -37,14 +59,15 @@ function locationAPI(req, resp){
     format: 'json'
   };
 
-  superagent.get(API).query(qObject)
-    .then(getLocation =>{
-      let newLocation = new Location(getLocation.body[0], req);
+  superagent.get(API).query(qObject).then(getLocation =>{
+    let newLocation = new Location(getLocation.body[0], req);
 
-      resp.status(200).send(newLocation);
+    cacheToDB(newLocation);
 
-    }).catch(() =>resp.status(500).send('Location Broken!'));
+    resp.status(200).send(newLocation);
 
+  }).catch(() =>resp.status(500).send('Location API Broken!'));
+  console.log('is API working');
 }
 
 function Location(info, city){
@@ -52,6 +75,13 @@ function Location(info, city){
   this.longitude = info.lon;
   this.formatted_query = info.display_name;
   this.search_query = city;
+}
+
+function cacheToDB(places){
+  const saveData = [places.formatted_query, places.latitude, places.longitude, places.search_query];
+  const SQL = 'INSERT INTO places (formatted_query, latitude, longitude, search_query) VALUES ($1, $2, $3, $4) RETURNING *;';
+
+  database.query(SQL, saveData).then(work => console.log('Working!', work.rows[0]));
 }
 
 function weather(req, resp){
@@ -64,16 +94,15 @@ function weather(req, resp){
     days: 8
   };
 
-  superagent.get(API).query(qObject)
-    .then(getWeather =>{
-      let weatherArr =
-            getWeather.body.data.map(dayData => {
-              return new Weather(dayData);
-            });
+  superagent.get(API).query(qObject).then(getWeather =>{
+    let weatherArr =
+      getWeather.body.data.map(dayData => {
+        return new Weather(dayData);
+      });
 
-      resp.status(200).json(weatherArr);
+    resp.status(200).json(weatherArr);
 
-    }).catch(() =>resp.status(500).send('Weather Broken!'));
+  }).catch(() =>resp.status(500).send('Weather Broken!'));
 
 }
 
@@ -121,6 +150,7 @@ function Hiking(info){
 }
 
 function movies(req, resp){
+  // console.log(req.query);
   const API = 'https://api.themoviedb.org/3/search/movie';
 
   let qObject = {
@@ -150,6 +180,7 @@ function Movies(info){
   this.image_url = `https://image.tmdb.org/t/p/w500${info.poster_path}`;
   this.popularity = info.popularity;
   this.released_on = info.release_date;
+  console.log(info.poster_path);
 }
 
 function yelp(req, resp){
@@ -193,5 +224,5 @@ app.use((error, req, resp, next) => {
   resp.status(500).send('Broken Server!');
 });
 
-app.listen( PORT, () => console.log('Working?', PORT));
+// app.listen( PORT, () => console.log('Working?', PORT));
 
